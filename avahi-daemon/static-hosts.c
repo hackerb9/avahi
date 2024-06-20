@@ -139,8 +139,11 @@ static void add_static_host_to_server(StaticHost *h)
             (h->address.proto == AVAHI_PROTO_INET6 && config->publish_aaaa_on_ipv4) ? AVAHI_PROTO_UNSPEC : h->address.proto;
 
         if ((err = avahi_server_add_address(avahi_server, h->group, AVAHI_IF_UNSPEC, p, 0, h->host, &h->address)) < 0) {
-            avahi_log_error ("Static host name %s: avahi_server_add_address failure: %s", h->host, avahi_strerror(err));
+          avahi_log_warn ("Static host name %s: avahi_server_add_address failure: %s; trying again using AVAHI_PUBLISH_NO_REVERSE", h->host, avahi_strerror(err));
+          if ((err = avahi_server_add_address(avahi_server, h->group, AVAHI_IF_UNSPEC, p, AVAHI_PUBLISH_NO_REVERSE, h->host, &h->address)) < 0) {
+            avahi_log_error ("Static host name %s: avahi_server_add_address failure: %s, even with AVAHI_PUBLISH_NO_REVERSE", h->host, avahi_strerror(err));
             return;
+          }
         }
 
         avahi_s_entry_group_commit (h->group);
